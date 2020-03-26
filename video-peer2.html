@@ -1,0 +1,49 @@
+<html>
+<body>
+<style>
+    video {
+        width: 300px;
+        height: 300px;
+    }
+</style>
+<h1>Me</h1>
+<video id="me" autoplay></video>
+
+<h1>Remote</h1>
+<video id="remote" autoplay></video>
+<script src="node_modules/simple-peer/simplepeer.min.js"></script>
+<script>
+    window.Peer = window.SimplePeer;
+
+    // get video/voice stream
+    navigator.getUserMedia({ video: true, audio: true }, gotMedia, () => {});
+
+    function gotMedia (stream) {
+        document.querySelector('#me').srcObject = stream;
+        window.p = new Peer({
+            initiator: location.hash === '#1',
+            trickle: false,
+            stream: stream,
+        });
+
+        p.on('signal', data => {
+            console.log('SIGNAL', JSON.stringify(data));
+        });
+
+        p.on('connect', () => {
+            console.log('CONNECT');
+            p.send('whatever' + Math.random());
+        });
+
+        p.on('stream', remoteStream => {
+            // got remote video stream, now let's show it in a video tag
+            var video = document.querySelector('#remote');
+
+            video.srcObject = remoteStream;
+
+            video.play()
+        })
+    }
+</script>
+</body>
+</html>
