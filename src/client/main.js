@@ -10,7 +10,7 @@ if (!WebSocket) {
   alert("WebSocket not supported :( It's not gonna work. Try latest Chrome or something.");
 }
 
-const clientNickname = random(); // window.prompt('Enter your name') ||
+const clientNickname = window.prompt('Enter your name') || random();
 
 const userMetaData = {
   nickName: clientNickname,
@@ -25,6 +25,7 @@ const state = {
   channel: null,
   connectedPeers: [],
   connectedPeersChannels: {},
+  connectedPeersMeta: {},
 };
 
 
@@ -115,6 +116,12 @@ socket.addEventListener('message', function (event) {
     console.log(`userChangedChannel`, message);
 
     state.connectedPeersChannels = message.content.peersChannels;
+    renderVideos();
+  }
+  if (message.topic === 'userMetaData') {
+    console.log(`userMetaData changed`, message);
+
+    state.connectedPeersMeta = message.content;
     renderVideos();
   }
 });
@@ -226,12 +233,18 @@ function renderVideos() {
   console.log('renderVideos');
 
   document.getElementById('remote-streams').innerHTML = '';
+
   state.connectedPeers.forEach(peer => {
     if (state.connectedPeersChannels[peer.peerId] !== state.channel) {
       return;
     }
-    console.log('peer', peer);
-    document.getElementById('remote-streams').appendChild(peer.video);
+    const div = document.createElement('div');
+    const header = document.createElement('h3');
+    header.textContent = state.connectedPeersMeta[peer.peerId].nickName;
+
+    div.appendChild(header);
+    div.appendChild(peer.video);
+    document.getElementById('remote-streams').appendChild(div);
 
     if (document.body.contains(peer.video)) {
       peer.video.play();
