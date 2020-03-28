@@ -10,7 +10,7 @@ exports.getPeerWSById = (wssClients, peerId) => {
   const client = Array.from(wssClients).find((client) => client.TO_id === peerId);
 
   if (!client) {
-    throw new Error(`Tried to connect to non existing peer ID: ${peerId}`);
+    console.error(`Tried to connect to non existing peer ID: ${peerId}`);
   }
 
   return client;
@@ -21,6 +21,17 @@ exports.getClientsMetaData = (wssClients) => {
 
   Array.from(wssClients).forEach((client) => {
     map[client.TO_id] = client.TO_meta;
+  });
+
+  return map;
+};
+
+
+exports.getPeersChannels = (wssClients) => {
+  const map = {};
+
+  Array.from(wssClients).forEach((client) => {
+    map[client.TO_id] = client.TO_channel;
   });
 
   return map;

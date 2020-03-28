@@ -10,7 +10,7 @@ if (!WebSocket) {
   alert("WebSocket not supported :( It's not gonna work. Try latest Chrome or something.");
 }
 
-const clientNickname = window.prompt('Enter your name') || random();
+const clientNickname = random(); // window.prompt('Enter your name') ||
 
 const userMetaData = {
   nickName: clientNickname,
@@ -19,14 +19,29 @@ const userMetaData = {
 /**
  * @type {{peerId, p, video, nickname}[]}
  */
-const connectedPeers = [];
+const state = {
+  myVideoStream: null,
+  clientId: null,
+  channel: null,
+  connectedPeers: [],
+  connectedPeersChannels: {},
+};
 
-let myVideoStream;
+
+
+document.querySelector('#channel').addEventListener('change', (e) => {
+  state.channel = e.target.value || null;
+
+  sendToSocket(socket, {
+    topic: 'changeChannel',
+    content: state.channel,
+  });
+});
+
+window._state = state;
 
 // Create WebSocket connection.
 const socket = new WebSocket('ws://localhost:8888');
-
-let clientId;
 
 // Connection opened
 socket.addEventListener('open', function () {
@@ -48,7 +63,7 @@ socket.addEventListener('message', function (event) {
   // init webRTC if there are other peers to connect
   // if you are the first person do nothing, wait for others to connect to you
   if (message.topic === 'wsConnectionInitiated') {
-    clientId = message.id;
+    state.clientId = message.id;
 
     // get video/voice stream
     navigator.getUserMedia(
@@ -57,7 +72,7 @@ socket.addEventListener('message', function (event) {
         audio: true,
       },
       (stream) => {
-        myVideoStream = stream;
+        state.myVideoStream = stream;
         showMyCameraPreview();
 
         message.content.otherConnectedPeers.forEach((peerId) => {
@@ -89,52 +104,54 @@ socket.addEventListener('message', function (event) {
 
     console.log(`Received answer from ${message.clientAuthorId}`);
 
-    const peer = connectedPeers.find(({ peerId }) => peerId === message.clientAuthorId);
+    const peer = state.connectedPeers.find(({ peerId }) => peerId === message.clientAuthorId);
 
     console.log('Signaling answer...');
     peer.p.signal(message.content);
     return;
   }
+
+  if (message.topic === 'userChangedChannel') {
+    console.log(`userChangedChannel`, message);
+
+    state.connectedPeersChannels = message.content.peersChannels;
+    renderVideos();
+  }
 });
 
 
 function showMyCameraPreview() {
-  if (!myVideoStream) {
+  if (!state.myVideoStream) {
     throw new Error('Tried to show preview of not existing stream');
   }
 
-  document.querySelector('#me').srcObject = myVideoStream;
+  document.querySelector('#me').srcObject = state.myVideoStream;
 }
 
 function removePeer(id) {
-  const peer = connectedPeers.find(({ peerId }) => peerId === id);
-  peer.video.remove();
-
-  connectedPeers.splice(connectedPeers.indexOf(peer), 1);
-  console.log('Peer removed. Connected peers: ', connectedPeers);
+  const peer = state.connectedPeers.find(({ peerId }) => peerId === id);
+  state.connectedPeers.splice(state.connectedPeers.indexOf(peer), 1);
+  console.log('Peer removed. Connected peers: ', state.connectedPeers);
 }
 
-function addRemoteVideoDOMElement() {
-  const video = document.createElement('video');
-  document.getElementById('remote-streams').appendChild(video);
-  return video;
+function createVideoDOMElement() {
+  return document.createElement('video');
 }
 
 function acceptWebRTCOfferFromAnotherPeer({ content, clientAuthorId }) {
   const p = new Peer({
     initiator: false,
     trickle: false,
-    stream: myVideoStream,
+    stream: state.myVideoStream,
   });
 
-  const video = addRemoteVideoDOMElement();
   const peerObject = {
     peerId: clientAuthorId,
     p,
-    video,
+    video: createVideoDOMElement(),
   };
 
-  connectedPeers.push(peerObject);
+  state.connectedPeers.push(peerObject);
 
   p.on('signal', (data) => {
     console.log('Sending answer to WS');
@@ -142,7 +159,7 @@ function acceptWebRTCOfferFromAnotherPeer({ content, clientAuthorId }) {
     sendToSocket(socket, {
       topic: 'webRTCAnswer',
       content: JSON.stringify(data),
-      id: clientId,
+      id: state.clientId,
       peerId: clientAuthorId,
     });
   });
@@ -160,14 +177,13 @@ function initWebRTCToExistingPeer(stream, { peerId }) {
     stream: stream,
   });
 
-  const video = addRemoteVideoDOMElement();
   const peerObject = {
     peerId,
     p,
-    video,
+    video: createVideoDOMElement(),
   };
 
-  connectedPeers.push(peerObject);
+  state.connectedPeers.push(peerObject);
 
   p.on('signal', (data) => {
     console.log('Sending offer to WS');
@@ -175,7 +191,7 @@ function initWebRTCToExistingPeer(stream, { peerId }) {
     sendToSocket(socket, {
       topic: 'webRTCOffer',
       content: JSON.stringify(data),
-      id: clientId,
+      id: state.clientId,
       peerId,
     });
   });
@@ -192,6 +208,7 @@ function handleCommonPeerEvents({ p, video, peerId }) {
     console.log('got stream');
     video.srcObject = remoteStream;
     video.play();
+    renderVideos();
   });
 
   p.on('error', (err) => {
@@ -201,5 +218,26 @@ function handleCommonPeerEvents({ p, video, peerId }) {
   p.on('close', () => {
     console.log('Peer connection closed. Removing peer.');
     removePeer(peerId);
+    renderVideos();
   });
 }
+
+function renderVideos() {
+  console.log('renderVideos');
+
+  document.getElementById('remote-streams').innerHTML = '';
+  state.connectedPeers.forEach(peer => {
+    if (state.connectedPeersChannels[peer.peerId] !== state.channel) {
+      return;
+    }
+    console.log('peer', peer);
+    document.getElementById('remote-streams').appendChild(peer.video);
+
+    if (document.body.contains(peer.video)) {
+      peer.video.play();
+    } else {
+      peer.video.pause();
+    }
+  })
+}
+

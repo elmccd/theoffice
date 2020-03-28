@@ -1,13 +1,17 @@
+const { MESSAGES } = require('./ws-messages');
+
 const {
   webRTCAnswerMessageHandler,
   webRTCOfferMessageHandler,
   userMetaDataMessageHandler,
+  changeChannelMessageHandler,
 } = require('./ws-message-handlers');
 
 const messagesHandlers = {
-  webRTCOffer: webRTCOfferMessageHandler,
-  webRTCAnswer: webRTCAnswerMessageHandler,
-  userMetaData: userMetaDataMessageHandler,
+  [MESSAGES.webRTCOffer]: webRTCOfferMessageHandler,
+  [MESSAGES.webRTCAnswer]: webRTCAnswerMessageHandler,
+  [MESSAGES.userMetaData]: userMetaDataMessageHandler,
+  [MESSAGES.changeChannel]: changeChannelMessageHandler,
 };
 
 exports.globalMessageHandler = (messageRaw, ws, wssClients) => {

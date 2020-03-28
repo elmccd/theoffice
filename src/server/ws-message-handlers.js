@@ -1,14 +1,19 @@
 const WebSocket = require('ws');
 
 const { send } = require('./ws-utils');
-const { getPeerWSById, getClientsMetaData } = require('./utils');
+const { getPeerWSById, getClientsMetaData, getPeersChannels } = require('./utils');
 const { MESSAGES } = require('./ws-messages');
 
 exports.webRTCOfferMessageHandler = ({ message, wssClients }) => {
   const targetPeerWS = getPeerWSById(wssClients, message.peerId);
 
+  if (!targetPeerWS) {
+    console.warn('Tried to connecting to peer that is gone. Aborting');
+    return;
+  }
+
   if (targetPeerWS.readyState !== WebSocket.OPEN) {
-    console.log('Another peer readyState not OPENED, not sure what it means yet.');
+    console.error('Another peer readyState not OPENED, not sure what it means yet.');
     return;
   }
 
@@ -35,9 +40,7 @@ exports.webRTCAnswerMessageHandler = ({ message, wssClients }) => {
 };
 
 exports.userMetaDataMessageHandler = ({ message, wssClients, ws }) => {
-  const client = getPeerWSById(wssClients, ws.TO_id);
-
-  client.TO_meta = message.content;
+  ws.TO_meta = message.content;
 
   wssClients.forEach((_client) => {
     if (_client.readyState !== WebSocket.OPEN) {
@@ -49,6 +52,26 @@ exports.userMetaDataMessageHandler = ({ message, wssClients, ws }) => {
       topic: MESSAGES.userMetaData,
       content: getClientsMetaData(wssClients),
       clientAuthorId: message.id,
+    });
+  });
+};
+
+exports.changeChannelMessageHandler = ({ message, wssClients, ws }) => {
+  ws.TO_channel = message.content;
+
+  wssClients.forEach((_client) => {
+    if (_client.readyState !== WebSocket.OPEN) {
+      console.error('Another peer readyState not OPENED, not sure what it means yet.');
+      return;
+    }
+
+    send(_client, {
+      topic: MESSAGES.userChangedChannel,
+      content: {
+        peerId: ws.TO_id,
+        channel: ws.TO_channel,
+        peersChannels: getPeersChannels(wssClients),
+      },
     });
   });
 };
