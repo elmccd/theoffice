@@ -3,9 +3,10 @@
 <style>
     video {
         width: 300px;
-        height: 300px;
+        height: 225px;
         background: #ddd;
         margin: 10px;
+        object-fit: cover;
     }
 
     #remote-streams {
@@ -22,10 +23,22 @@
 
 <script src="vendor/simplepeer.min.js"></script>
 <script>
+
+    /**
+     * @type {{peerId, p, video}[]}
+     */
     const connectedPeers = [];
     let myVideoStream;
 
     window.Peer = window.SimplePeer;
+
+    if (!Peer.WEBRTC_SUPPORT) {
+        alert('WebRTC not supported :( It\'s not gonna work. Try latest Chrome or something.')
+    }
+
+    if (!WebSocket) {
+        alert('WebSocket not supported :( It\'s not gonna work. Try latest Chrome or something.')
+    }
 
     // Create WebSocket connection.
     const socket = new WebSocket('ws://localhost:8888');
@@ -104,6 +117,14 @@
         document.querySelector('#me').srcObject = myVideoStream;
     }
 
+    function removePeer(id) {
+        const peer = connectedPeers.find(({ peerId }) => peerId === id);
+        peer.video.remove();
+
+        connectedPeers.splice(connectedPeers.indexOf(peer), 1);
+        console.log('Peer removed. Connected peers: ', connectedPeers);
+    }
+
     function acceptWebRTCOfferFromAnotherPeer ({ content, clientAuthorId }) {
         const p = new Peer({
             initiator: false,
@@ -111,9 +132,13 @@
             stream: myVideoStream,
         });
 
+        const video = document.createElement("video");
+        document.getElementById("remote-streams").appendChild(video);
+
         connectedPeers.push({
             peerId: clientAuthorId,
             p,
+            video,
         });
 
         p.on('signal', data => {
@@ -129,17 +154,23 @@
 
         p.on('connect', () => {
             console.log('CONNECT');
-            p.send('whatever' + Math.random());
         });
 
         p.on('stream', remoteStream => {
             console.log('got stream');
 
-            const video = document.createElement("video");
-            document.getElementById("remote-streams").appendChild(video);
 
             video.srcObject = remoteStream;
             video.play()
+        });
+
+        p.on('error', err => {
+            console.error('Peer error:', err);
+        });
+
+        p.on('close', () => {
+            console.log('Peer connection closed. Removing peer.');
+            removePeer(clientAuthorId);
         });
 
         // immediately signal offer to newly created peer
@@ -152,9 +183,13 @@
             stream: stream,
         });
 
+        const video = document.createElement("video");
+        document.getElementById("remote-streams").appendChild(video);
+
         connectedPeers.push({
             peerId,
             p,
+            video,
         });
 
         p.on('signal', data => {
@@ -170,18 +205,22 @@
 
         p.on('connect', () => {
             console.log('CONNECT');
-            p.send('whatever' + Math.random());
         });
 
         p.on('stream', remoteStream => {
             console.log('got stream');
-
-            const video = document.createElement("video");
-            document.getElementById("remote-streams").appendChild(video);
-
             video.srcObject = remoteStream;
             video.play()
-        })
+        });
+
+        p.on('error', err => {
+            console.error('Peer error:', err);
+        });
+
+        p.on('close', () => {
+            console.log('Peer connection closed. Removing peer.');
+            removePeer(peerId);
+        });
     }
 </script>
 </body>
