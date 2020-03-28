@@ -7,7 +7,7 @@ exports.send = (ws, message) => {
 };
 
 exports.debugWSMessages = (ws) => {
-  ws.on("message", (messageRaw) => {
+  ws.on('message', (messageRaw) => {
     console.log(`Got: ${messageRaw}`);
   });
 };

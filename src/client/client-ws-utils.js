@@ -3,11 +3,5 @@ export const sendToSocket = (socket, data) => {
     throw new Error(`Topic is required, got: ${data.topic}`);
   }
 
-  socket.send(
-    JSON.stringify(
-      data,
-      null,
-      2
-    )
-  );
+  socket.send(JSON.stringify(data, null, 2));
 };

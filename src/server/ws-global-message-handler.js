@@ -1,14 +1,16 @@
 const {
   webRTCAnswerMessageHandler,
   webRTCOfferMessageHandler,
-} = require("./ws-message-handlers");
+  userMetaDataMessageHandler,
+} = require('./ws-message-handlers');
 
 const messagesHandlers = {
   webRTCOffer: webRTCOfferMessageHandler,
   webRTCAnswer: webRTCAnswerMessageHandler,
+  userMetaData: userMetaDataMessageHandler,
 };
 
-exports.globalMessageHandler = (messageRaw, wssClients) => {
+exports.globalMessageHandler = (messageRaw, ws, wssClients) => {
   let message = JSON.parse(messageRaw);
 
   if (!messagesHandlers[message.topic]) {
@@ -17,6 +19,7 @@ exports.globalMessageHandler = (messageRaw, wssClients) => {
 
   messagesHandlers[message.topic]({
     message,
+    ws,
     wssClients: wssClients,
   });
 };

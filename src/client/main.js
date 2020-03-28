@@ -1,5 +1,6 @@
 import Peer from 'simple-peer';
-import {sendToSocket} from "./client-ws-utils";
+import { sendToSocket } from './client-ws-utils';
+import { random } from './utils';
 
 if (!Peer.WEBRTC_SUPPORT) {
   alert("WebRTC not supported :( It's not gonna work. Try latest Chrome or something.");
@@ -9,8 +10,14 @@ if (!WebSocket) {
   alert("WebSocket not supported :( It's not gonna work. Try latest Chrome or something.");
 }
 
+const clientNickname = window.prompt('Enter your name') || random();
+
+const userMetaData = {
+  nickName: clientNickname,
+};
+
 /**
- * @type {{peerId, p, video}[]}
+ * @type {{peerId, p, video, nickname}[]}
  */
 const connectedPeers = [];
 
@@ -24,6 +31,11 @@ let clientId;
 // Connection opened
 socket.addEventListener('open', function () {
   console.log('Socket connection opened');
+
+  sendToSocket(socket, {
+    topic: 'userMetaData',
+    content: userMetaData,
+  });
 });
 
 // Listen for messages
@@ -85,6 +97,7 @@ socket.addEventListener('message', function (event) {
   }
 });
 
+
 function showMyCameraPreview() {
   if (!myVideoStream) {
     throw new Error('Tried to show preview of not existing stream');
@@ -126,18 +139,12 @@ function acceptWebRTCOfferFromAnotherPeer({ content, clientAuthorId }) {
   p.on('signal', (data) => {
     console.log('Sending answer to WS');
 
-    socket.send(
-      JSON.stringify(
-        {
-          topic: 'webRTCAnswer',
-          content: JSON.stringify(data),
-          id: clientId,
-          peerId: clientAuthorId,
-        },
-        null,
-        2
-      )
-    );
+    sendToSocket(socket, {
+      topic: 'webRTCAnswer',
+      content: JSON.stringify(data),
+      id: clientId,
+      peerId: clientAuthorId,
+    });
   });
 
   handleCommonPeerEvents(peerObject);
@@ -165,7 +172,7 @@ function initWebRTCToExistingPeer(stream, { peerId }) {
   p.on('signal', (data) => {
     console.log('Sending offer to WS');
 
-    sendToSocket(socket,{
+    sendToSocket(socket, {
       topic: 'webRTCOffer',
       content: JSON.stringify(data),
       id: clientId,
@@ -196,4 +203,3 @@ function handleCommonPeerEvents({ p, video, peerId }) {
     removePeer(peerId);
   });
 }
-
