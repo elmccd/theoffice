@@ -2,13 +2,14 @@
   "name": "theoffice",
   "version": "1.0.0",
   "description": "",
-  "main": "ws-server.js",
+  "main": "src/server/index.js",
   "dependencies": {
     "simple-peer": "^9.6.2",
     "ws": "^7.2.3"
   },
   "devDependencies": {},
   "scripts": {
+    "start": "node ./src/server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
