@@ -1,8 +1,30 @@
+const uuid = require('uuid');
 const WebSocket = require('ws');
 
 const wss = new WebSocket.Server({ port: 8888 });
 
+const getOtherPeersIds = (wssClients, clientId) => {
+    const clients = Array.from(wssClients.values());
+
+    return clients
+        .filter(client => client.id !== clientId)
+        .map(client => client.id)
+};
+
+const getPeerWSById = (wssClients, peerId) => {
+    const client = Array.from(wssClients.values())
+        .find(client => client.id === peerId);
+
+    if (!client) {
+        throw new Error(`Tried to connect to non existing peer ID: ${peerId}`)
+    }
+
+    return client;
+};
+
 wss.on('connection', function connection(ws) {
+    ws.id = `client-${uuid.v4()}`;
+
     ws.on('message', function incoming(messageRaw) {
         console.log(`Got: ${messageRaw}`);
 
@@ -16,39 +38,44 @@ wss.on('connection', function connection(ws) {
         }
 
         if (message.topic === 'webRTCOffer') {
-            wss.clients.forEach(function each(client) {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify({
-                        topic: 'webRTCOffer',
-                        content: message.content,
-                        clientAuthorId: message.id,
-                    }));
-                }
-            });
+            const targetPeer = message.peerId;
+            const targetPeerWS = getPeerWSById(wss.clients, targetPeer);
+
+            if (targetPeerWS.readyState !== WebSocket.OPEN) {
+                console.log('Another peer readyState not OPENED, not sure what it means yet.');
+                return;
+            }
+
+            targetPeerWS.send(JSON.stringify({
+                topic: 'webRTCOffer',
+                content: message.content,
+                clientAuthorId: message.id,
+            }));
         }
 
         if (message.topic === 'webRTCAnswer') {
-            wss.clients.forEach(function each(client) {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify({
-                        topic: 'webRTCAnswer',
-                        content: message.content,
-                        clientAuthorId: message.id,
-                    }));
-                }
-            });
+            const targetPeerWS = getPeerWSById(wss.clients, message.peerId);
+
+            if (targetPeerWS.readyState !== WebSocket.OPEN) {
+                console.log('Another peer readyState not OPENED, not sure what it means yet.');
+                return;
+            }
+
+            targetPeerWS.send(JSON.stringify({
+                topic: 'webRTCAnswer',
+                content: message.content,
+                clientAuthorId: message.id,
+            }));
         }
     });
 
-    if (wss.clients.size === 1) {
-
-    }
+    const otherConnectedPeers = getOtherPeersIds(wss.clients, ws.id);
 
     ws.send(JSON.stringify({
-        topic: 'initiateWebRTC',
+        topic: 'wsConnectionInitiated',
+        id: ws.id,
         content: {
-            id: require('uuid').v4(),
-            initiator: wss.clients.size !== 1,
+            otherConnectedPeers,
         },
     }));
 });
