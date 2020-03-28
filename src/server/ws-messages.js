@@ -1,4 +1,4 @@
 exports.MESSAGES = {
-    webRTCOffer: 'webRTCOffer',
-    webRTCAnswer: 'webRTCAnswer',
+  webRTCOffer: "webRTCOffer",
+  webRTCAnswer: "webRTCAnswer",
 };

@@ -1,25 +1,25 @@
-const uuid = require('uuid');
+const uuid = require("uuid");
 
 exports.getOtherPeersIds = (wssClients, clientId) => {
-    const clients = Array.from(wssClients.values());
+  const clients = Array.from(wssClients.values());
 
-    return clients
-        .filter(client => client.id !== clientId)
-        .map(client => client.id)
+  return clients
+    .filter((client) => client.id !== clientId)
+    .map((client) => client.id);
 };
 
 exports.getPeerWSById = (wssClients, peerId) => {
-    const client = Array.from(wssClients.values())
-        .find(client => client.id === peerId);
+  const client = Array.from(wssClients.values()).find(
+    (client) => client.id === peerId
+  );
 
-    if (!client) {
-        throw new Error(`Tried to connect to non existing peer ID: ${peerId}`)
-    }
+  if (!client) {
+    throw new Error(`Tried to connect to non existing peer ID: ${peerId}`);
+  }
 
-    return client;
+  return client;
 };
 
-
 exports.generateClientId = () => {
-    return `client-${uuid.v4()}`;
+  return `client-${uuid.v4()}`;
 };
