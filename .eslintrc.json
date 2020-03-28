@@ -1,13 +1,18 @@
 {
   "extends": ["eslint:recommended", "prettier"],
   "parserOptions": {
-    "ecmaVersion": 2020
+    "ecmaVersion": 2020,
+    "sourceType": "module"
   },
   "env": {
     "es6": true,
     "node": true
   },
   "globals": {
-    "exports": true
+    "window": true,
+    "alert": true,
+    "navigator": true,
+    "document": true,
+    "WebSocket": true
   }
 }
