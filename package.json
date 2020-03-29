@@ -7,13 +7,15 @@
     "fe:build:prod": "webpack --config webpack.config.prod.js",
     "fe:start": "webpack-dev-server",
     "fe:deploy": "npm run fe:build:prod && surge ./ --domain https://offy.surge.sh",
-    "start": "node ./src/server/index.js",
+    "start": "pm2 start src/server/index.js --watch --log --ignore-watch=\"node_modules\"",
+    "start:prod": "pm2 start src/server/index.js --no-autorestart",
     "lint": "npx eslint src",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "main": "src/server/index.js",
   "dependencies": {
     "simple-peer": "^9.6.2",
+    "twilio": "^3.41.1",
     "uuid": "^7.0.2",
     "ws": "^7.2.3"
   },
