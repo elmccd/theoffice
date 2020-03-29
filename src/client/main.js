@@ -42,7 +42,7 @@ document.querySelector('#channel').addEventListener('change', (e) => {
 window._state = state;
 
 // Create WebSocket connection.
-const socket = new WebSocket('ws://localhost:8888');
+const socket = new WebSocket(WS_BACKEND_URL);
 
 // Connection opened
 socket.addEventListener('open', function () {
@@ -148,7 +148,7 @@ function createVideoDOMElement() {
 function acceptWebRTCOfferFromAnotherPeer({ content, clientAuthorId }) {
   const p = new Peer({
     initiator: false,
-    trickle: false,
+    trickle: true,
     stream: state.myVideoStream,
   });
 
@@ -180,7 +180,7 @@ function acceptWebRTCOfferFromAnotherPeer({ content, clientAuthorId }) {
 function initWebRTCToExistingPeer(stream, { peerId }) {
   const p = new Peer({
     initiator: true,
-    trickle: false,
+    trickle: true,
     stream: stream,
   });
 

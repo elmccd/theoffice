@@ -1,0 +1,33 @@
+<html>
+  <body>
+    <style>
+      video {
+        width: 300px;
+        height: 225px;
+        background: #ddd;
+        margin: 10px;
+        object-fit: cover;
+      }
+
+      #remote-streams {
+        display: inline-block;
+      }
+    </style>
+
+    <label for="channel">Channel</label>
+    <select id="channel">
+      <option value="" selected>---</option>
+      <option value="channel-1">Channel 1</option>
+      <option value="channel-2">Channel 2</option>
+      <option value="channel-3">Channel 3</option>
+    </select>
+
+    <h1>Me</h1>
+    <video id="me" autoplay muted></video>
+
+    <h1>Remote</h1>
+    <div id="remote-streams"></div>
+
+    <script src="dist/bundle-dev.js"></script>
+  </body>
+</html>

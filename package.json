@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "fe:build": "webpack",
+    "fe:build": "webpack --config webpack.config.dev.js",
+    "fe:build:prod": "webpack --config webpack.config.prod.js",
     "fe:start": "webpack-dev-server",
-    "fe:deploy": "surge ./ --domain https://offy.surge.sh",
+    "fe:deploy": "npm run fe:build:prod && surge ./ --domain https://offy.surge.sh",
     "start": "node ./src/server/index.js",
     "lint": "npx eslint src",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -24,7 +25,8 @@
     "surge": "^0.21.3",
     "webpack": "^4.42.1",
     "webpack-cli": "^3.3.11",
-    "webpack-dev-server": "^3.10.3"
+    "webpack-dev-server": "^3.10.3",
+    "webpack-merge": "^4.2.2"
   },
   "author": "",
   "license": "ISC"

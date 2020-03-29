@@ -9,6 +9,7 @@
     "node": true
   },
   "globals": {
+    "WS_BACKEND_URL": true,
     "window": true,
     "alert": true,
     "navigator": true,
